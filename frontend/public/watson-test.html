@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IBM Watsonx Orchestrate Test</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+    <h2>Watsonx Orchestrate Standalone Test</h2>
+    <p>This page tests the Watsonx script outside of React to ensure the configuration and environment are working.</p>
+    <div id="watson-mentor-embed" style="height: 600px; width: 100%; max-width: 800px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;"></div>
+    <script>
+    window.wxOConfiguration = {
+        orchestrationID: "ab3a03b1d8a241a6a7d74f3cbe5bbb07_28df8be1-21ce-46fe-9fca-d615c91c19b5",
+        hostURL: "https://au-syd.watsonx-orchestrate.cloud.ibm.com",
+        rootElementID: "watson-mentor-embed",
+        deploymentPlatform: "ibmcloud",
+        crn: "crn:v1:bluemix:public:watsonx-orchestrate:au-syd:a/ab3a03b1d8a241a6a7d74f3cbe5bbb07:28df8be1-21ce-46fe-9fca-d615c91c19b5::",
+        chatOptions: {
+            agentId: "eadf2337-f3da-4493-9a92-881e4b993459",
+            agentEnvironmentId: "afca2ba1-4c74-4752-ae69-6ae3b99b6066"
+        }
+    };
+    setTimeout(function () {
+        const script = document.createElement('script');
+        script.src = `${window.wxOConfiguration.hostURL}/wxochat/wxoLoader.js?embed=true`;
+        script.addEventListener('load', function () {
+            if(window.wxoLoader) {
+                window.wxoLoader.init();
+            }
+        });
+        document.head.appendChild(script);
+    }, 0);
+    </script>
+</body>
+</html>
+<html>
+<head>
+    @Value("${ibm.watsonx.orchestrate.agent-id}")
+    @Value("${ibm.watsonx.orchestrate.base-domain}")
+    private String baseDomain;</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+
+    <h2>Watsonx Orchestrate Standalone Test</h2>
+    <p>This page tests the Watsonx script outside of React to ensure the configuration and environment are working.</p>
+    
+    <!-- Container for Watsonx -->
+    <div id="watson-mentor-embed" style="height: 600px; width: 100%; max-width: 800px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;"></div>
+
+<script>
+window.wxOConfiguration = {
+    orchestrationID: "ab3a03b1d8a241a6a7d74f3cbe5bbb07_28df8be1-21ce-46fe-9fca-d615c91c19b5",
+        String url = "https://" + region + "." + baseDomain + "/instances/" + instanceId + "/v1/chat";son-mentor-embed",
+    deploymentPlatform: "ibmcloud",
+    crn: "crn:v1:bluemix:public:watsonx-orchestrate:au-syd:a/ab3a03b1d8a241a6a7d74f3cbe5bbb07:28df8be1-21ce-46fe-9fca-d615c91c19b5::",
+    chatOptions: {
+        agentId: "eadf2337-f3da-4493-9a92-881e4b993459",
+        agentEnvironmentId: "afca2ba1-4c74-4752-ae69-6ae3b99b6066"
+    }
+};
+
+  setTimeout(function () {
+    const script = document.createElement('script');
+    script.src = `${window.wxOConfiguration.hostURL}/wxochat/wxoLoader.js?embed=true`;
+    script.addEventListener('load', function () {
+        if(window.wxoLoader) {
+            window.wxoLoader.init();
+        }
+    });
+    document.head.appendChild(script);
+  }, 0);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+export const ROUTES = {
+  HOME: '/',
+  LOGIN: '/login',
+  REGISTER: '/register',
+  DASHBOARD: '/dashboard',
+  PROFILE: '/dashboard/profile',
+  RESUME_UPLOAD: '/resume/upload',
+  RESUME_DETAILS: '/resume/details',
+  SKILLS: '/skills',
+  SKILL_GAP: '/skills/gap',
+  ROADMAP: '/roadmap',
+  QUESTIONS: '/questions',
+  MOCK_INTERVIEW: '/interview',
+  MOCK_RESULT: '/interview/result',
+  ANALYTICS: '/analytics',
+  AI_MENTOR: '/chat',
+};
