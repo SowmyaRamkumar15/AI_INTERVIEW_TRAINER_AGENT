@@ -5,14 +5,17 @@ import com.aiplacement.entity.User;
 import com.aiplacement.enums.Priority;
 import com.aiplacement.exception.ResourceNotFoundException;
 import com.aiplacement.repository.SkillGapRepository;
+import com.aiplacement.repository.SkillRepository;
 import com.aiplacement.repository.UserRepository;
 import com.aiplacement.service.SkillGapService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,6 +23,7 @@ import java.util.stream.Collectors;
 public class SkillGapServiceImpl implements SkillGapService {
 
     private final SkillGapRepository skillGapRepository;
+    private final SkillRepository skillRepository;
     private final UserRepository userRepository;
 
     // Predefined skills per role — replace with AI analysis in Phase 3
@@ -37,7 +41,16 @@ public class SkillGapServiceImpl implements SkillGapService {
     public List<SkillGap> getByUser(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return skillGapRepository.findByUserId(user.getId());
+        
+        List<SkillGap> gaps = skillGapRepository.findByUserId(user.getId());
+        
+        Set<String> userSkills = skillRepository.findByUserId(user.getId()).stream()
+                .map(s -> s.getSkillName().toLowerCase())
+                .collect(Collectors.toSet());
+                
+        gaps.forEach(gap -> gap.setPresent(userSkills.contains(gap.getMissingSkill().toLowerCase())));
+        
+        return gaps;
     }
 
     @Override
@@ -52,15 +65,32 @@ public class SkillGapServiceImpl implements SkillGapService {
         List<String> required = ROLE_SKILLS.getOrDefault(targetRole,
                 List.of("Communication", "Problem Solving", "Teamwork"));
 
-        List<SkillGap> gaps = required.stream().map(skill ->
-                SkillGap.builder()
-                        .user(user)
-                        .targetRole(targetRole)
-                        .missingSkill(skill)
-                        .priority(Priority.HIGH)
-                        .build()
-        ).collect(Collectors.toList());
+        Set<String> userSkills = skillRepository.findByUserId(user.getId()).stream()
+                .map(s -> s.getSkillName().toLowerCase())
+                .collect(Collectors.toSet());
 
-        return skillGapRepository.saveAll(gaps);
+        List<SkillGap> allAnalysis = new ArrayList<>();
+        List<SkillGap> gapsToSave = new ArrayList<>();
+
+        for (String skill : required) {
+            boolean isPresent = userSkills.contains(skill.toLowerCase());
+            
+            SkillGap gap = SkillGap.builder()
+                    .user(user)
+                    .targetRole(targetRole)
+                    .missingSkill(skill)
+                    .priority(Priority.HIGH)
+                    .build();
+            
+            gap.setPresent(isPresent);
+            allAnalysis.add(gap);
+            
+            if (!isPresent) {
+                gapsToSave.add(gap);
+            }
+        }
+
+        skillGapRepository.saveAll(gapsToSave);
+        return allAnalysis;
     }
 }

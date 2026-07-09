@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   TrendingUp, Award, Video, Target, Calendar,
-  BarChart3, CheckCircle, Loader2, Flame
+  BarChart3, CheckCircle, Loader2, Flame, LineChart, Brain
 } from 'lucide-react';
 import { mockInterviewService } from '../../services/mockInterviewService';
+import { analyticsService } from '../../services/analyticsService';
 
 const StatCard = ({ title, value, sub, icon: Icon, color, bg }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center gap-4 group cursor-default hover:shadow-md transition-shadow">
@@ -33,13 +34,20 @@ const DifficultyBadge = ({ d }) => {
 
 const ProgressAnalyticsPage = () => {
   const [history, setHistory] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    mockInterviewService.getHistory()
-      .then(res => setHistory(res.data || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      mockInterviewService.getHistory(),
+      analyticsService.get()
+    ])
+    .then(([histRes, data]) => {
+      setHistory(Array.isArray(histRes) ? histRes : (histRes.data || []));
+      setAnalytics(data);
+    })
+    .catch(() => {})
+    .finally(() => setLoading(false));
   }, []);
 
   const total = history.length;
@@ -49,11 +57,11 @@ const ProgressAnalyticsPage = () => {
   history.forEach(h => { if (h.jobRole) roleMap[h.jobRole] = (roleMap[h.jobRole] || 0) + 1; });
   const topRole = Object.entries(roleMap).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
 
-  // Streak: consecutive days with an interview
+  // Streak calculation
   const streak = (() => {
     if (!history.length) return 0;
     const days = [...new Set(history.map(h => {
-      const d = new Date(h.createdAt || Date.now());
+      const d = new Date(h.createdAt || h.interviewDate || Date.now());
       return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     }))].sort().reverse();
     let count = 1;
@@ -87,39 +95,35 @@ const ProgressAnalyticsPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <StatCard title="Total Interviews" value={total} sub="All time" icon={Video} color="text-blue-600" bg="bg-blue-100" />
             <StatCard title="Top Role" value={topRole} sub="Most practiced" icon={Target} color="text-indigo-600" bg="bg-indigo-100" />
-            <StatCard title="Day Streak" value={`${streak}🔥`} sub="Keep it up!" icon={Flame} color="text-orange-600" bg="bg-orange-100" />
-            <StatCard title="Hard Sessions" value={diffCount.HARD} sub="Challenging rounds" icon={Award} color="text-rose-600" bg="bg-rose-100" />
+            <StatCard title="Strongest Topic" value={analytics?.strongestTopic || '—'} sub="Based on avg score" icon={Brain} color="text-emerald-600" bg="bg-emerald-100" />
+            <StatCard title="Weakest Topic" value={analytics?.weakestTopic || '—'} sub="Needs improvement" icon={LineChart} color="text-rose-600" bg="bg-rose-100" />
           </div>
 
-          {/* Difficulty Breakdown + Bar Chart side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Difficulty breakdown */}
+            {/* Weekly Practice Bar Chart (CSS based) */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
               <h2 className="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-indigo-500" /> Difficulty Breakdown
+                <BarChart3 className="w-5 h-5 text-indigo-500" /> Weekly Practice
               </h2>
-              {total === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-8">No data yet. Start your first interview!</p>
+              {(!analytics?.weeklyPractice || analytics.weeklyPractice.length === 0) ? (
+                <p className="text-slate-400 text-sm text-center py-8">No practice data yet.</p>
               ) : (
-                <div className="space-y-4">
-                  {[
-                    { label: 'Easy', key: 'EASY', color: 'bg-emerald-500', track: 'bg-emerald-100' },
-                    { label: 'Medium', key: 'MEDIUM', color: 'bg-amber-500', track: 'bg-amber-100' },
-                    { label: 'Hard', key: 'HARD', color: 'bg-rose-500', track: 'bg-rose-100' },
-                  ].map(({ label, key, color, track }) => {
-                    const pct = total ? Math.round((diffCount[key] / total) * 100) : 0;
+                <div className="flex items-end justify-around h-48 mt-4 gap-2">
+                  {analytics.weeklyPractice.map((wp, idx) => {
+                    const maxCount = Math.max(...analytics.weeklyPractice.map(w => w.count), 1);
+                    const heightPct = (wp.count / maxCount) * 100;
                     return (
-                      <div key={key}>
-                        <div className="flex justify-between text-sm mb-1.5">
-                          <span className="font-medium text-slate-700">{label}</span>
-                          <span className="text-slate-500">{diffCount[key]} ({pct}%)</span>
+                      <div key={idx} className="flex flex-col items-center gap-2 flex-1 group">
+                        <div className="text-xs font-medium text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {wp.count} sessions
                         </div>
-                        <div className={`w-full h-3 rounded-full ${track}`}>
-                          <div
-                            className={`h-3 rounded-full ${color} transition-all duration-700`}
-                            style={{ width: `${pct}%` }}
+                        <div className="w-full max-w-[40px] bg-indigo-100 rounded-t-lg relative flex-1 flex items-end">
+                          <div 
+                            className="w-full bg-indigo-500 rounded-t-lg transition-all duration-1000 ease-out" 
+                            style={{ height: `${heightPct}%` }}
                           />
                         </div>
+                        <span className="text-xs font-semibold text-slate-600">{wp.week}</span>
                       </div>
                     );
                   })}
@@ -127,21 +131,32 @@ const ProgressAnalyticsPage = () => {
               )}
             </div>
 
-            {/* Role breakdown */}
+            {/* Role Performance Breakdown */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
               <h2 className="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
-                <Target className="w-5 h-5 text-purple-500" /> Roles Practiced
+                <Award className="w-5 h-5 text-purple-500" /> Role Performance
               </h2>
-              {Object.keys(roleMap).length === 0 ? (
+              {(!analytics?.rolePerformance || analytics.rolePerformance.length === 0) ? (
                 <p className="text-slate-400 text-sm text-center py-8">No data yet.</p>
               ) : (
-                <div className="space-y-3">
-                  {Object.entries(roleMap).sort((a, b) => b[1] - a[1]).map(([role, count]) => (
-                    <div key={role} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <span className="text-sm font-medium text-slate-700">{role}</span>
-                      <span className="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                        {count} session{count > 1 ? 's' : ''}
-                      </span>
+                <div className="space-y-4">
+                  {analytics.rolePerformance.map((rp, idx) => (
+                    <div key={idx} className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="font-medium text-slate-700">{rp.role}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-slate-500">{rp.count} sessions</span>
+                          <span className="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">
+                            {(rp.avgScore || 0).toFixed(1)}/10
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-slate-100">
+                        <div
+                          className="h-2 rounded-full bg-gradient-to-r from-indigo-400 to-purple-500 transition-all duration-1000"
+                          style={{ width: `${(rp.avgScore / 10) * 100}%` }}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -164,20 +179,24 @@ const ProgressAnalyticsPage = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100">
-                      <th className="text-left py-3 px-2 text-slate-500 font-semibold">#</th>
+                      <th className="text-left py-3 px-2 text-slate-500 font-semibold">Date</th>
                       <th className="text-left py-3 px-2 text-slate-500 font-semibold">Role</th>
-                      <th className="text-left py-3 px-2 text-slate-500 font-semibold">Difficulty</th>
-                      <th className="text-left py-3 px-2 text-slate-500 font-semibold">Questions</th>
+                      <th className="text-left py-3 px-2 text-slate-500 font-semibold">Score</th>
                       <th className="text-left py-3 px-2 text-slate-500 font-semibold">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {history.map((h, i) => (
                       <tr key={i} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                        <td className="py-3 px-2 text-slate-400">{i + 1}</td>
-                        <td className="py-3 px-2 font-medium text-slate-700">{h.jobRole || '—'}</td>
-                        <td className="py-3 px-2"><DifficultyBadge d={h.difficulty} /></td>
-                        <td className="py-3 px-2 text-slate-600">{h.questionsCount || '—'}</td>
+                        <td className="py-3 px-2 text-slate-500 font-medium">
+                          {h.interviewDate ? new Date(h.interviewDate).toLocaleDateString() : (h.createdAt ? new Date(h.createdAt).toLocaleDateString() : '—')}
+                        </td>
+                        <td className="py-3 px-2 font-medium text-slate-700">{h.role || h.jobRole || '—'}</td>
+                        <td className="py-3 px-2">
+                           <span className="font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                            {h.score ? `${h.score.toFixed(1)}/10` : '—'}
+                           </span>
+                        </td>
                         <td className="py-3 px-2">
                           <span className="flex items-center gap-1 text-emerald-600 font-medium">
                             <CheckCircle className="w-4 h-4" /> Done

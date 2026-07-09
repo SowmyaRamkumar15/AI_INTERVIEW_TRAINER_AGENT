@@ -23,6 +23,13 @@ public class Resume extends BaseEntity {
     
     private String filePath;
     
+    private String name;
+    
+    private String email;
+    
+    private String phone;
+
+    
     @Column(columnDefinition = "TEXT")
     private String skills;
     
@@ -31,6 +38,9 @@ public class Resume extends BaseEntity {
     
     @Column(columnDefinition = "TEXT")
     private String projects;
+    
+    @Column(columnDefinition = "TEXT")
+    private String education;
     
     private Double atsScore;
 

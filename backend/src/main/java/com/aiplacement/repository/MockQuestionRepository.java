@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MockQuestionRepository extends JpaRepository<MockQuestion, Long> {
+    long countByMockInterview_UserId(Long userId);
 }

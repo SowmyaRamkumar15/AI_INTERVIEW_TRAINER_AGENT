@@ -4,6 +4,7 @@ import com.aiplacement.dto.request.RoadmapRequest;
 import com.aiplacement.dto.response.RoadmapResponse;
 import com.aiplacement.response.ApiResponse;
 import com.aiplacement.service.RoadmapService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -29,21 +30,21 @@ public class RoadmapController {
     @PostMapping
     public ResponseEntity<ApiResponse<RoadmapResponse>> addRoadmapItem(
             Authentication authentication,
-            @RequestBody RoadmapRequest request) {
+            @Valid @RequestBody RoadmapRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 roadmapService.addRoadmapItem(authentication.getName(), request),
-                "Roadmap item added"
+                "Roadmap item added successfully"
         ));
     }
 
-    @PutMapping("/status/{id}")
+    @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<RoadmapResponse>> updateStatus(
             Authentication authentication,
             @PathVariable Long id,
             @RequestParam String status) {
         return ResponseEntity.ok(ApiResponse.success(
                 roadmapService.updateStatus(authentication.getName(), id, status),
-                "Status updated"
+                "Roadmap item status updated"
         ));
     }
 

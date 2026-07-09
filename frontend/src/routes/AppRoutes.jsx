@@ -17,6 +17,12 @@ import MockInterviewPage from '../pages/interview/MockInterviewPage';
 import ResultPage from '../pages/interview/ResultPage';
 import ProgressAnalyticsPage from '../pages/analytics/ProgressAnalyticsPage';
 import AIMentorPage from '../pages/chat/AIMentorPage';
+import SkillListPage from '../pages/skills/SkillListPage';
+import QuestionPracticePage from '../pages/questions/QuestionPracticePage';
+import RoadmapPage from '../pages/roadmap/RoadmapPage';
+import StudyPlanPage from '../pages/studyplan/StudyPlanPage';
+import CompanyPrepPage from '../pages/company/CompanyPrepPage';
+import SettingsPage from '../pages/settings/SettingsPage';
 
 const AppRoutes = () => {
   return (
@@ -41,7 +47,13 @@ const AppRoutes = () => {
             <Route path={ROUTES.MOCK_INTERVIEW} element={<MockInterviewPage />} />
             <Route path={ROUTES.MOCK_RESULT} element={<ResultPage />} />
             <Route path={ROUTES.ANALYTICS} element={<ProgressAnalyticsPage />} />
-            <Route path={ROUTES.AI_MENTOR} element={<AIMentorPage />} />
+            <Route path={ROUTES.Interviora} element={<AIMentorPage />} />
+            <Route path={ROUTES.SKILLS} element={<SkillListPage />} />
+            <Route path={ROUTES.QUESTIONS} element={<QuestionPracticePage />} />
+            <Route path={ROUTES.ROADMAP} element={<RoadmapPage />} />
+            <Route path={ROUTES.STUDY_PLAN} element={<StudyPlanPage />} />
+            <Route path={ROUTES.COMPANY_PREP} element={<CompanyPrepPage />} />
+            <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
           </Route>
         </Route>
       </Route>

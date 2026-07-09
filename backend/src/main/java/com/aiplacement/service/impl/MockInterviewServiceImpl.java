@@ -46,6 +46,7 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         List<String> generatedQuestions = aiService.generateQuestions(
                 request.getRole(),
                 request.getExperience(),
+                request.getDifficulty(),
                 request.getNumberOfQuestions()
         );
 

@@ -68,38 +68,54 @@ const ResumeDetailsPage = () => {
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {resumes.map((resume) => (
-              <li key={resume.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-indigo-500" />
+            {resumes.map((resume, index) => (
+                <div key={resume.id || index} className="flex items-start justify-between py-5 first:pt-0 last:pb-0">
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                      <FileText className="w-6 h-6 text-indigo-500" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-3">
+                        <p className="font-bold text-slate-800 text-lg">{resume.name || resume.fileName}</p>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${resume.atsScore >= 70 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          ATS Score: {resume.atsScore || 0}/100
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-slate-500">
+                        {resume.email && resume.email !== 'Not found' && <span>📧 {resume.email}</span>}
+                        {resume.phone && resume.phone !== 'Not found' && <span>📱 {resume.phone}</span>}
+                      </div>
+                      
+                      <div className="mt-3 text-sm text-slate-600">
+                        <p><span className="font-medium text-slate-700">Skills:</span> {resume.skills}</p>
+                        <p><span className="font-medium text-slate-700">Education:</span> {resume.education}</p>
+                        <p><span className="font-medium text-slate-700">Experience:</span> {resume.experience}</p>
+                      </div>
+
+                      <p className="text-xs text-slate-400 mt-2">
+                        Uploaded on: {resume.uploadedAt ? new Date(resume.uploadedAt).toLocaleDateString() : ''}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-slate-800">{resume.fileName || 'Resume'}</p>
-                    <p className="text-xs text-slate-400">
-                      {resume.uploadedAt ? new Date(resume.uploadedAt).toLocaleDateString() : ''}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {resume.fileUrl && (
-                    <a
-                      href={resume.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  <div className="flex flex-col items-end gap-2">
+                    {resume.fileUrl && (
+                      <a
+                        href={resume.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors"
+                      >
+                        <Download className="w-4 h-4" /> Download
+                      </a>
+                    )}
+                    <button
+                      onClick={() => handleDelete(resume.id)}
+                      className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
                     >
-                      <Download className="w-4 h-4" />
-                    </a>
-                  )}
-                  <button
-                    onClick={() => handleDelete(resume.id)}
-                    className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                      <Trash2 className="w-4 h-4" /> Delete
+                    </button>
+                  </div>
                 </div>
-              </li>
             ))}
           </ul>
         )}

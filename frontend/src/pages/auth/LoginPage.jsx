@@ -54,7 +54,7 @@ const LoginPage = () => {
             <BrainCircuit className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
-            AI Copilot
+            Interviora
           </h1>
         </div>
 

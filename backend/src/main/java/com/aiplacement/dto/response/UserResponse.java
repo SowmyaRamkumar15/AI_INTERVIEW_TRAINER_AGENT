@@ -10,4 +10,9 @@ public class UserResponse {
     private String name;
     private String email;
     private String role;
+    private String college;
+    private String degree;
+    private String experience;
+    private String targetRole;
+    private String targetCompany;
 }

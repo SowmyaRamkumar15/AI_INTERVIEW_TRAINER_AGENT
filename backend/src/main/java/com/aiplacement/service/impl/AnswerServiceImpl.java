@@ -10,6 +10,7 @@ import com.aiplacement.repository.AnswerHistoryRepository;
 import com.aiplacement.repository.QuestionRepository;
 import com.aiplacement.repository.UserRepository;
 import com.aiplacement.service.AnswerService;
+import com.aiplacement.util.KeywordEvaluator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,9 +30,13 @@ public class AnswerServiceImpl implements AnswerService {
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
 
-        // Basic scoring: 5.0/10 default — replace with AI scoring in Phase 3
-        Double score = 5.0;
-        String feedback = "Thank you for your answer. Keep practicing!";
+        // Use KeywordEvaluator for rule-based scoring
+        KeywordEvaluator.EvaluationResult evalResult = KeywordEvaluator.evaluate(
+                question.getQuestionText(), 
+                request.getUserAnswer()
+        );
+        Double score = evalResult.score;
+        String feedback = evalResult.feedback;
 
         AnswerHistory history = AnswerHistory.builder()
                 .question(question)

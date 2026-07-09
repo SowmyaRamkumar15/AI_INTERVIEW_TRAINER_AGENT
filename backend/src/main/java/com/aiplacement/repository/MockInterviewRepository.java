@@ -14,4 +14,9 @@ public interface MockInterviewRepository extends JpaRepository<MockInterview, Lo
     long countByUserId(Long userId);
     @Query("SELECT AVG(m.score) FROM MockInterview m WHERE m.user.id = :userId AND m.score IS NOT NULL")
     Double findAverageScoreByUserId(@Param("userId") Long userId);
+    
+    List<MockInterview> findByUserIdAndInterviewDateBetween(Long userId, java.time.LocalDateTime start, java.time.LocalDateTime end);
+    
+    @Query("SELECT m.role, COUNT(m), AVG(m.score) FROM MockInterview m WHERE m.user.id = :userId GROUP BY m.role ORDER BY AVG(m.score) DESC")
+    List<Object[]> findRolePerformanceByUserId(@Param("userId") Long userId);
 }

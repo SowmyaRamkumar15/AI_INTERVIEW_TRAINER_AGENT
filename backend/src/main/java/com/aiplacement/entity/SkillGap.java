@@ -21,6 +21,9 @@ public class SkillGap extends BaseEntity {
     private String targetRole;
     
     private String missingSkill;
+    
+    @Transient
+    private boolean present;
 
     @Enumerated(EnumType.STRING)
     private Priority priority;

@@ -28,6 +28,12 @@ public class User extends BaseEntity {
 
     private String password;
 
+    private String college;
+    private String degree;
+    private String experience;
+    private String targetRole;
+    private String targetCompany;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 

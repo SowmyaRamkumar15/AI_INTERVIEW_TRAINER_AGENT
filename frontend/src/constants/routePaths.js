@@ -9,9 +9,12 @@ export const ROUTES = {
   SKILLS: '/skills',
   SKILL_GAP: '/skills/gap',
   ROADMAP: '/roadmap',
+  STUDY_PLAN: '/study-plan',
+  COMPANY_PREP: '/company',
+  SETTINGS: '/settings',
   QUESTIONS: '/questions',
   MOCK_INTERVIEW: '/interview',
   MOCK_RESULT: '/interview/result',
   ANALYTICS: '/analytics',
-  AI_MENTOR: '/chat',
+  Interviora: '/chat',
 };

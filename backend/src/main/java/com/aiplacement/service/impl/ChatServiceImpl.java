@@ -40,9 +40,11 @@ public class ChatServiceImpl implements ChatService {
             .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
             .build();
     private final Map<Long, String> sessionMap = new ConcurrentHashMap<>();
-    // Correct IBM Cloud Orchestrate REST base — api.<region>.watson.cloud.ibm.com
-    private static final String ORCHESTRATE_BASE_DOMAIN = "watson.cloud.ibm.com";
-    @Value("${ibm.watsonx.api-key}")
+    // Correct IBM Cloud Orchestrate REST base — api.<region>.watson-orchestrate.cloud.ibm.com
+    @Value("${ibm.watsonx.orchestrate.base-domain:watson-orchestrate.cloud.ibm.com}")
+    private String orchestrateBaseDomain;
+
+    @Value("${ibm.watsonx.orchestrate.api-key:${ibm.watsonx.api-key}}")
     private String ibmApiKey;
 
     @Value("${ibm.watsonx.orchestrate.instance-id}")
@@ -58,8 +60,16 @@ public class ChatServiceImpl implements ChatService {
     public void init() {
         System.out.println("[Config] region = " + region);
         System.out.println("[Config] instanceId = " + instanceId);
-        System.out.println("[Config] baseDomain = " + ORCHESTRATE_BASE_DOMAIN);
+        System.out.println("[Config] baseDomain = " + orchestrateBaseDomain);
         System.out.println("[Config] agentId = " + agentId);
+
+        // ── API key debug (remove after confirming) ──────────────────────────
+        System.out.println("[Config] API KEY LOADED  = " + (ibmApiKey != null && !ibmApiKey.isBlank()));
+        System.out.println("[Config] API KEY LENGTH  = " + (ibmApiKey != null ? ibmApiKey.length() : "null"));
+        System.out.println("[Config] API KEY PREFIX  = " + (ibmApiKey != null && ibmApiKey.length() >= 8
+                ? ibmApiKey.substring(0, 8) + "..."
+                : ibmApiKey));
+        // ─────────────────────────────────────────────────────────────────────
     }
 
     // IAM token cache
@@ -99,37 +109,28 @@ public class ChatServiceImpl implements ChatService {
     // ─── Orchestrate REST chat ───────────────────────────────────────────────
 
     /**
-     * POST https://{region}.watson-orchestrate.cloud.ibm.com/instances/{instanceId}/v1/chat
+     * Calls IBM Orchestrate /chat/completions.
      *
-     * Request body:
-     * {
-     *   "input": { "text": "<user message>" },
-     *   "agent_id": "<agentId>",
-     *   "session_id": "<sessionId>"   // optional — omit on first turn
-     * }
+     * IBM Orchestrate returns SSE (Server-Sent Events) by default:
+     *   data: {"choices":[{"delta":{"content":"..."}}]}
+     *   data: [DONE]
      *
-     * Response:
-     * {
-     *   "output": { "text": "..." },
-     *   "session_id": "..."
-     * }
+     * We request stream:false first; if the response still comes back as SSE
+     * (starts with "data:") we fall through to parseSSEResponse().
      */
     private String callOrchestrateApi(String message, Long userId) throws Exception {
         String iamToken = getIamToken();
 
-        // /chat/completions uses OpenAI-compatible messages format
+        // Request body — stream:false asks for a plain JSON response
         java.util.Map<String, Object> reqBody = new java.util.LinkedHashMap<>();
         reqBody.put("messages", List.of(Map.of("role", "user", "content", message)));
+        reqBody.put("stream", false);
 
         String reqJson = objectMapper.writeValueAsString(reqBody);
 
-        System.out.println("[Debug] region = " + region);
-        System.out.println("[Debug] instanceId = " + instanceId);
-        System.out.println("[Debug] agentId = " + agentId);
-        // Correct URL: https://api.<region>.watson.cloud.ibm.com/instances/<id>/v1/orchestrate/agents/<agentId>/chat/completions
-        String url = "https://api." + region + "." + ORCHESTRATE_BASE_DOMAIN
+        String url = "https://api." + region + "." + orchestrateBaseDomain
                 + "/instances/" + instanceId
-                + "/v1/orchestrate/agents/" + agentId
+                + "/v1/orchestrate/" + agentId
                 + "/chat/completions";
 
         System.out.println("[ChatService] Calling Orchestrate URL: " + url);
@@ -138,6 +139,7 @@ public class ChatServiceImpl implements ChatService {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
                 .header("Authorization", "Bearer " + iamToken)
                 .POST(HttpRequest.BodyPublishers.ofString(reqJson))
                 .build();
@@ -145,13 +147,60 @@ public class ChatServiceImpl implements ChatService {
         HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 
         System.out.println("[ChatService] Orchestrate response status: " + res.statusCode());
-        System.out.println("[ChatService] Orchestrate response body: " + res.body());
+        // Log first 600 chars to avoid flooding console with huge SSE payloads
+        String rawBody = res.body();
+        System.out.println("[ChatService] Orchestrate response body (first 600): "
+                + rawBody.substring(0, Math.min(600, rawBody.length())));
 
         if (res.statusCode() != 200 && res.statusCode() != 201) {
-            throw new RuntimeException("Orchestrate API error: HTTP " + res.statusCode() + " — " + res.body());
+            throw new RuntimeException("Orchestrate API error: HTTP " + res.statusCode() + " — " + rawBody);
         }
 
-        JsonNode json = objectMapper.readTree(res.body());
+        // ── Route to the correct parser ──────────────────────────────────────
+        String trimmed = rawBody.trim();
+        if (trimmed.startsWith("data:")) {
+            // IBM returned SSE stream — parse line-by-line
+            return parseSSEResponse(trimmed);
+        }
+        // Plain JSON response
+        return parseJsonResponse(trimmed);
+    }
+
+    private String parseSSEResponse(String rawBody) throws Exception {
+        StringBuilder fullResponse = new StringBuilder();
+        String[] lines = rawBody.split("\n");
+        for (String line : lines) {
+            String trimmedLine = line.trim();
+            if (trimmedLine.startsWith("data:")) {
+                String jsonStr = trimmedLine.substring(5).trim();
+                if (jsonStr.isEmpty() || jsonStr.equals("[DONE]")) {
+                    continue;
+                }
+                try {
+                    JsonNode node = objectMapper.readTree(jsonStr);
+                    // Extract OpenAI-compatible SSE delta content: choices[0].delta.content
+                    JsonNode choices = node.path("choices");
+                    if (choices.isArray() && choices.size() > 0) {
+                        JsonNode delta = choices.get(0).path("delta");
+                        if (delta.has("content")) {
+                            fullResponse.append(delta.get("content").asText());
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("[ChatService] Failed to parse SSE line: " + jsonStr);
+                    // Ignore malformed lines and continue
+                }
+            }
+        }
+        String result = fullResponse.toString().trim();
+        if (result.isEmpty()) {
+            throw new RuntimeException("Parsed SSE stream successfully but got empty content.");
+        }
+        return result;
+    }
+
+    private String parseJsonResponse(String rawBody) throws Exception {
+        JsonNode json = objectMapper.readTree(rawBody);
 
         // OpenAI-compatible response: choices[0].message.content
         JsonNode choices = json.path("choices");
@@ -175,7 +224,7 @@ public class ChatServiceImpl implements ChatService {
             if (!result.isBlank()) return result;
         }
 
-        throw new RuntimeException("Unexpected Orchestrate response shape: " + json);
+        throw new RuntimeException("Unexpected Orchestrate JSON response shape: " + json);
     }
 
     // ─── Main service method ─────────────────────────────────────────────────
@@ -334,7 +383,7 @@ public class ChatServiceImpl implements ChatService {
         }
 
         String roleStr = (role != null && !role.isBlank()) ? role : "Software Engineering";
-        return "💬 **AI Mentor**\n\n" +
+        return "💬 **Interviora**\n\n" +
                "You asked: *\"" + message + "\"*\n\n" +
                "Here are preparation tips for **" + roleStr + "**:\n\n" +
                "1. **Research the company** — products, tech stack, recent news\n" +

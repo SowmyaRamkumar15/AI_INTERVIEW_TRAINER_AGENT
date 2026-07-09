@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://localhost:8080/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 export const ENDPOINTS = {
   AUTH: {
@@ -13,10 +13,9 @@ export const ENDPOINTS = {
   },
   RESUME: {
     UPLOAD: '/resume/upload',
-    GET_ALL: '/resume',
+    GET_ALL: '/resume/all',
     DELETE: '/resume',
     GET_SKILLS: '/resume/skills',
-    GENERATE_QUESTIONS: '/resume/generate-questions',
   },
   SKILLS: {
     GET_ALL: '/skills',
@@ -27,9 +26,8 @@ export const ENDPOINTS = {
     ANALYZE: '/skill-gap/analyze',
     GET: '/skill-gap',
   },
-  ROADMAP: {
-    GET: '/roadmap',
-    UPDATE_STATUS: '/roadmap/status',
+  ANALYTICS: {
+    GET: '/analytics',
   },
   QUESTIONS: {
     GET_ALL: '/questions',
@@ -41,15 +39,24 @@ export const ENDPOINTS = {
     START: '/interview/start',
     HISTORY: '/interview/history',
     GET_BY_ID: '/interview',
-    NEXT: '/interview/next',
-    EVALUATE: '/interview/evaluate',
-    END: '/interview/end',
   },
   CHAT: {
     SEND_MESSAGE: '/chat',
     HISTORY: '/chat/history',
   },
-  WATSON: {
-    TOKEN: '/watson/token',
+  STUDY_PLAN: {
+    GENERATE: '/studyplan/generate',
+  },
+  COMPANY: {
+    GET_ALL: '/company',
+    GET_BY_NAME: '/company',
+    GET_QUESTIONS: '/company',
+  },
+  ROADMAP: {
+    GET_ALL: '/roadmap',
+    ADD: '/roadmap',
+    UPDATE_STATUS: (id) => `/roadmap/${id}/status`,
+    DELETE: (id) => `/roadmap/${id}`,
   },
 };
+

@@ -15,7 +15,9 @@ export const mockInterviewService = {
 
   getHistory: async () => {
     const response = await api.get(ENDPOINTS.MOCK_INTERVIEW.HISTORY);
-    return response.data?.data || [];
+    const resultData = response.data;
+    // Check if the array is wrapped in a 'data' property (ApiResponse), or returned directly
+    return Array.isArray(resultData) ? resultData : (resultData?.data || []);
   },
 
   getById: async (id) => {

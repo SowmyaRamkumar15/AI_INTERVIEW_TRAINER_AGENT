@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Video, Play, StopCircle, ChevronRight, Mic, MicOff,
+  Video, Play, StopCircle, ChevronRight,
   Clock, Trophy, RotateCcw, CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
 import { mockInterviewService } from '../../services/mockInterviewService';

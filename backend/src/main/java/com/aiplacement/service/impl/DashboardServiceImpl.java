@@ -15,6 +15,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     private final UserRepository userRepository;
     private final MockInterviewRepository mockInterviewRepository;
+    private final MockQuestionRepository mockQuestionRepository;
     private final AnswerHistoryRepository answerHistoryRepository;
     private final SkillRepository skillRepository;
     private final RoadmapRepository roadmapRepository;
@@ -27,6 +28,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         long totalInterviews = mockInterviewRepository.countByUserId(user.getId());
         Double avgScore = mockInterviewRepository.findAverageScoreByUserId(user.getId());
+        long totalQuestionsAnswered = mockQuestionRepository.countByMockInterview_UserId(user.getId());
         long totalSkills = skillRepository.countByUserId(user.getId());
         long totalRoadmapItems = roadmapRepository.countByUserId(user.getId());
         long completedRoadmapItems = roadmapRepository.countByUserIdAndStatus(user.getId(), RoadmapStatus.COMPLETED);
@@ -34,7 +36,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         return DashboardResponse.builder()
                 .totalInterviews(totalInterviews)
-                .totalQuestionsAnswered(0L)
+                .totalQuestionsAnswered(totalQuestionsAnswered)
                 .totalSkills(totalSkills)
                 .totalRoadmapItems(totalRoadmapItems)
                 .completedRoadmapItems(completedRoadmapItems)

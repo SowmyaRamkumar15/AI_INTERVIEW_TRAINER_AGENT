@@ -12,6 +12,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import com.aiplacement.util.KeywordEvaluator;
+import com.aiplacement.util.QuestionTemplateBank;
 
 @Service
 public class AIService {
@@ -22,7 +24,7 @@ public class AIService {
     // --- watsonx.ai generation endpoint (us-south is default; change if your instance is in another region) ---
     // Format: https://<region>.ml.cloud.ibm.com/ml/v1/text/generation?version=2023-05-29
     private static final String WX_GENERATION_URL =
-            "https://us-south.ml.cloud.ibm.com/ml/v1/text/generation?version=2023-05-29";
+            "https://au-syd.ml.cloud.ibm.com/ml/v1/text/generation?version=2023-05-29";
 
     @Value("${ibm.watsonx.api-key:}")
     private String apiKey;
@@ -37,13 +39,14 @@ public class AIService {
     // Public API
     // ---------------------------------------------------------------
 
-    public List<String> generateQuestions(String role, String experience, int count) {
+    public List<String> generateQuestions(String role, String experience, String difficulty, int count) {
         if (role == null) role = "Software Engineer";
+        if (difficulty == null) difficulty = "MEDIUM";
 
         if (isConfigured()) {
             try {
                 String iamToken = fetchIamToken();
-                String prompt = buildQuestionsPrompt(role, experience, count);
+                String prompt = buildQuestionsPrompt(role, experience, difficulty, count);
                 String rawText = callWatsonxGeneration(iamToken, prompt);
                 List<String> parsed = parseQuestions(rawText, count);
                 if (!parsed.isEmpty()) return parsed;
@@ -54,12 +57,9 @@ public class AIService {
             System.out.println("[AIService] Watson credentials not configured (ibm.watsonx.api-key). Using mock questions.");
         }
 
-        // Fallback mock questions
-        return Arrays.asList(
-                "Can you walk me through your experience as a " + role + "?",
-                "Describe a challenging problem you solved recently and how you approached it.",
-                "How do you stay current with new technologies in your field?"
-        );
+        // Fallback to Template Bank
+        System.out.println("[AIService] Using QuestionTemplateBank fallback");
+        return QuestionTemplateBank.generateQuestions(role, difficulty, count);
     }
 
     public String evaluateAnswer(String question, String answer) {
@@ -72,7 +72,10 @@ public class AIService {
                 System.err.println("[AIService] evaluateAnswer failed, using fallback. Cause: " + e.getMessage());
             }
         }
-        return "Good answer! To improve, consider adding specific metrics about the outcomes you achieved.";
+        // Fallback to KeywordEvaluator for feedback
+        System.out.println("[AIService] Using KeywordEvaluator fallback");
+        KeywordEvaluator.EvaluationResult eval = KeywordEvaluator.evaluate(question, answer);
+        return eval.feedback;
     }
 
     // ---------------------------------------------------------------
@@ -153,13 +156,13 @@ public class AIService {
     // Prompt builders
     // ---------------------------------------------------------------
 
-    private String buildQuestionsPrompt(String role, String experience, int count) {
+    private String buildQuestionsPrompt(String role, String experience, String difficulty, int count) {
         return String.format(
                 "You are an expert technical interviewer. Generate exactly %d concise interview questions " +
-                "for a %s candidate with %s years of experience. " +
+                "for a %s candidate with %s years of experience at a %s difficulty level. " +
                 "Format: one question per line, numbered 1. 2. 3. etc. " +
                 "Do not include any explanation, only the numbered questions.\n\n",
-                count, role, experience != null ? experience : "2+"
+                count, role, experience != null ? experience : "2+", difficulty
         );
     }
 

@@ -46,4 +46,9 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserResponse>> getProfile(Authentication authentication) {
         return ResponseEntity.ok(ApiResponse.success(userService.getProfile(authentication.getName()), "Profile fetched successfully"));
     }
+
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(Authentication authentication, @Valid @RequestBody com.aiplacement.dto.request.UpdateProfileRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(userService.updateProfile(authentication.getName(), request), "Profile updated successfully"));
+    }
 }

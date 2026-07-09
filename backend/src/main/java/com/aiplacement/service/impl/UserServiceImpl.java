@@ -32,7 +32,11 @@ public class UserServiceImpl implements UserService {
         if (request.getName() != null) {
             user.setName(request.getName());
         }
-        // Can add more fields if needed
+        if (request.getCollege() != null) user.setCollege(request.getCollege());
+        if (request.getDegree() != null) user.setDegree(request.getDegree());
+        if (request.getExperience() != null) user.setExperience(request.getExperience());
+        if (request.getTargetRole() != null) user.setTargetRole(request.getTargetRole());
+        if (request.getTargetCompany() != null) user.setTargetCompany(request.getTargetCompany());
         
         user = userRepository.save(user);
         return mapToResponse(user);
@@ -44,6 +48,11 @@ public class UserServiceImpl implements UserService {
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .college(user.getCollege())
+                .degree(user.getDegree())
+                .experience(user.getExperience())
+                .targetRole(user.getTargetRole())
+                .targetCompany(user.getTargetCompany())
                 .build();
     }
 }
